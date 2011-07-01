@@ -68,9 +68,29 @@ class Write
 			exit
 		end
 	end
+	
+	# 引き数に指定されたファイルを読み込む。文末に<br/>を加える
+	# タブを&nbsp;、<を&lt;、>を&gt;に変換する。
+	def inputText(path)
+		text = ""
+		File::open(path).each do |f|
+			if f =~ /.*\t.*/ then
+				# <>も変換する？
+				f.gsub!(/\t/, '&nbsp;&nbsp;&nbsp;&nbsp;')
+				f.gsub!(/</, '&lt;')
+				f.gsub!(/>/, '&gt;')
+			end
+			text += f + '<br/>'
+		end
+		return text
+	end
 
-	# アップロードを行う。contentはStringかFileによって処理を分岐
-	def upload(title, content, defaultNotebook=nil)
+	# アップロードを行う。
+	def upload(title, path, defaultNotebook=nil)
+		# ファイル読み込み
+		# 存在チェック
+		text = inputText(path)
+
 		# up先ノートブック
 		up = nil
 		# Notebookのリストを取得
@@ -83,18 +103,12 @@ class Write
 			end
 		end
 
-		if content.class == String then
-			puts "str"
-		elsif content.class == File then
-			puts "file"
-		end
-
 		# ノート作成
 		note = Evernote::EDAM::Type::Note.new()
 		note.title = title
 		note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
 			'<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
-			'<en-note>' + content + '</en-note>'
+			'<en-note>' + text + '</en-note>'
 		note.created = Time.now.to_i * 1000
 		note.updated = note.created
 		begin
@@ -102,11 +116,19 @@ class Write
 			puts "Upload: complete."
 			puts "       Title: #{result.title}"
 			puts "       Created: #{result.created}"
+		rescue Evernote::EDAM::Error::EDAMUserException => ex
+			puts "Upload: error. "
+			puts ex.class
+			puts ex.message
+			puts ex.backtrace
 		rescue => ex
 			puts "Upload: error. #{ex}"
+			puts ex.class
+			puts ex.message
+			puts ex.backtrace
 		end
 	end
 end
 
-w = Write.new
-w.upload("投稿テスト", "uwaaaaaaaaaa")
+#w = Write.new
+#w.upload(ARGV[0], ARGV[1])
