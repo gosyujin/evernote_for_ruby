@@ -17,7 +17,6 @@ require 'Evernote/EDAM/limits_constants.rb'
 
 require 'rubygems'
 require 'pit'
-require 'pp'
 
 class Write
 	# 初期化処理。ユーザ名、パスワードを入力し認証を行う。
@@ -43,6 +42,17 @@ class Write
 		userStoreTransport = Thrift::HTTPClientTransport.new(userStoreUrl)
 		userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
 		@userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
+		
+		# バージョンチェック
+		versionOK = @userStore.checkVersion("Ruby EDAMTest",
+						Evernote::EDAM::UserStore::EDAM_VERSION_MAJOR,
+						Evernote::EDAM::UserStore::EDAM_VERSION_MINOR)
+		puts "Is my EDAM protocol version up to date?  #{versionOK}"
+		if (!versionOK) then
+			exit(1)
+		end
+
+		# 認証
 		@auth = auth()
 		# Tokenだけ別出し
 		@authToken = @auth.authenticationToken
@@ -62,23 +72,25 @@ class Write
 				@user["consumerKey"], @user["consumerSecret"])
 			puts "Auth: #{authResult.user.username}"
 			return authResult
-		rescue Evernote::EDAM::Error::EDAMUserException
-			puts "Auth: error."
-			puts "Exit."
+		rescue Evernote::EDAM::Error::EDAMUserException => ex
+			parameter = ex.parameter
+			errorCode = ex.errorCode
+			errorText = Evernote::EDAM::Error::EDAMErrorCode::VALUE_MAP[errorCode]
+			puts "Auth: #{errorText}, Parameter: #{parameter}, ErrorCode: #{errorCode}"
 			exit
 		end
 	end
 	
 	# 引き数に指定されたファイルを読み込む。文末に<br/>を加える
-	# タブを&nbsp;、<を&lt;、>を&gt;に変換する。
 	def inputText(path)
 		text = ""
 		File::open(path).each do |f|
+			f.gsub!(/&/, '&amp;')
+			f.gsub!(/</, '&lt;')
+			f.gsub!(/>/, '&gt;')
+			f.gsub!(/"/, '&quot;')
 			if f =~ /.*\t.*/ then
-				# <>も変換する？
 				f.gsub!(/\t/, '&nbsp;&nbsp;&nbsp;&nbsp;')
-				f.gsub!(/</, '&lt;')
-				f.gsub!(/>/, '&gt;')
 			end
 			text += f + '<br/>'
 		end
@@ -96,7 +108,7 @@ class Write
 		# Notebookのリストを取得
 		notebooks = @noteStore.listNotebooks(@authToken)
 		notebooks.each do |notebook|
-			puts "IsDefault?: #{notebook.defaultNotebook} ,Name: #{notebook.name}"
+			# puts "IsDefault?: #{notebook.defaultNotebook} ,Name: #{notebook.name}"
 			# デフォルトになっているノートブックを確認
 			if notebook.defaultNotebook then
 				 up = notebook
@@ -114,13 +126,14 @@ class Write
 		begin
 			result = @noteStore.createNote(@authToken, note)
 			puts "Upload: complete."
-			puts "       Title: #{result.title}"
-			puts "       Created: #{result.created}"
+			puts "       Notebook: #{up.name}"
+			puts "       Title:    #{result.title}"
+			puts "       Created:  #{result.created}"
 		rescue Evernote::EDAM::Error::EDAMUserException => ex
-			puts "Upload: error. "
-			puts ex.class
-			puts ex.message
-			puts ex.backtrace
+			parameter = ex.parameter
+			errorCode = ex.errorCode
+			errorText = Evernote::EDAM::Error::EDAMErrorCode::VALUE_MAP[errorCode]
+			puts "Upload: #{errorText}, Parameter: #{parameter}, ErrorCode: #{errorCode}"
 		rescue => ex
 			puts "Upload: error. #{ex}"
 			puts ex.class
@@ -129,6 +142,3 @@ class Write
 		end
 	end
 end
-
-#w = Write.new
-#w.upload(ARGV[0], ARGV[1])
