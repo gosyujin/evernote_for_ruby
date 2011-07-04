@@ -46,6 +46,16 @@ module Thrift
       resp, data = http.post(@url.request_uri, @outbuf, @headers)
       @inbuf = StringIO.new data
       @outbuf = ""
+
+#      proxy_class = Net::HTTP::Proxy(ENV["PROXY"], 8080)
+#      http = proxy_class.new(@url.host)
+
+#      http.start do |http|
+#        # http.use_ssl = @url.scheme == "https"
+#        resp, data = http.post(@url.request_uri, @outbuf, @headers)
+#        @inbuf = StringIO.new data
+#        @outbuf = ""
+#      end 
     end
   end
 end

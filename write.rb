@@ -86,6 +86,7 @@ class Write
 		text = ""
 		File::open(path).each do |f|
 			f.gsub!(/&/, '&amp;')
+			f.gsub!(/ /, '&nbsp;') 
 			f.gsub!(/</, '&lt;')
 			f.gsub!(/>/, '&gt;')
 			f.gsub!(/"/, '&quot;')
