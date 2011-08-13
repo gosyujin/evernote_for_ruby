@@ -23,38 +23,39 @@ class MyEvernote
     def initialize
         # https://sandbox.evernote.com/Registration.action
         # まずはsandboxで新規ユーザ登録！
-        @user = Pit.get("evernote", :require => {
+        user = Pit.get("evernote", :require => {
+            "userName" => "your evernote userName.", 
+            "password" => "your evernote password.", 
+            "consumerKey" => "your evernote consumerKey.", 
+            "consumerSecret" => "your evernote consumerSecret.", 
+        })
+        userTo = Pit.get("evernoteTo", :require => {
             "userName" => "your evernote userName.", 
             "password" => "your evernote password.", 
             "consumerKey" => "your evernote consumerKey.", 
             "consumerSecret" => "your evernote consumerSecret.", 
         })
         # Pitを使わずにソース内にべた書き用
-        # @user = {
+        # user = {
         #    "userName" => "your evernote userName.", 
         #    "password" => "your evernote password.", 
         #    "consumerKey" => "your evernote consumerKey.", 
         #    "consumerSecret" => "your evernote consumerSecret.", 
         #}
-
+        # userTo = {
+        #    "userName" => "your evernote userName.", 
+        #    "password" => "your evernote password.", 
+        #    "consumerKey" => "your evernote consumerKey.", 
+        #    "consumerSecret" => "your evernote consumerSecret.", 
+        #}
+        
         evernoteHost = "sandbox.evernote.com"
         userStoreUrl = "https://#{evernoteHost}/edam/user"
         userStoreTransport = Thrift::HTTPClientTransport.new(userStoreUrl)
         userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
-        @userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
-        
-        # バージョンチェック
-        versionOK = @userStore.checkVersion("Ruby EDAMTest",
-                        Evernote::EDAM::UserStore::EDAM_VERSION_MAJOR,
-                        Evernote::EDAM::UserStore::EDAM_VERSION_MINOR)
-        puts "Is my EDAM protocol version up to date?  #{versionOK}"
-        if (!versionOK) then
-            exit(1)
-        end
-
+        userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
         # 認証
-        @auth = auth()
-        # Tokenだけ別出し
+        @auth = auth(user, userStore)
         @authToken = @auth.authenticationToken
         
         noteStoreUrlBase = "https://#{evernoteHost}/edam/note/"
@@ -62,15 +63,40 @@ class MyEvernote
         noteStoreTransport = Thrift::HTTPClientTransport.new(noteStoreUrl)
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
         @noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
+        
+        evernoteHostTo = "www.evernote.com"
+        userStoreUrlTo = "https://#{evernoteHostTo}/edam/user"
+        userStoreTransportTo = Thrift::HTTPClientTransport.new(userStoreUrlTo)
+        userStoreProtocolTo = Thrift::BinaryProtocol.new(userStoreTransportTo)
+        userStoreTo = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocolTo)
+        # 同期先アカウント
+        @authTo = auth(userTo, userStoreTo)
+        @authTokenTo = @authTo.authenticationToken
+
+        noteStoreUrlBaseTo = "https://#{evernoteHostTo}/edam/note/"
+        noteStoreUrlTo = noteStoreUrlBaseTo + @authTo.user.shardId
+        noteStoreTransportTo = Thrift::HTTPClientTransport.new(noteStoreUrlTo)
+        noteStoreProtocolTo = Thrift::BinaryProtocol.new(noteStoreTransportTo)
+        @noteStoreTo = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocolTo)
     end
 
     # ユーザ認証を行う。認証に成功した場合AuthenticationResultを返す。認証に失敗した場合終了する。
-    def auth()
+    def auth(user, userStore)
+        # バージョンチェック
+        versionOK = userStore.checkVersion("Ruby EDAMTest",
+                        Evernote::EDAM::UserStore::EDAM_VERSION_MAJOR,
+                        Evernote::EDAM::UserStore::EDAM_VERSION_MINOR)
+        # puts "Is my EDAM protocol version up to date?  #{versionOK}"
+        if (!versionOK) then
+            exit(1)
+        end
         begin
-            authResult = @userStore.authenticate(
-                @user["userName"], @user["password"], 
-                @user["consumerKey"], @user["consumerSecret"])
-            puts "Auth: #{authResult.user.username}"
+            authResult = userStore.authenticate(
+                user["userName"],
+                user["password"],
+                user["consumerKey"],
+                user["consumerSecret"])
+            # puts "Auth: #{authResult.user.username}"
             return authResult
         rescue Evernote::EDAM::Error::EDAMUserException => ex
             parameter = ex.parameter
@@ -97,7 +123,20 @@ class MyEvernote
         end
         return text
     end
-
+    
+    # 2つのアカウント間のSandboxノートを同期
+    def sync()
+        # "Sandbox"のnote一覧(GUID)を取得
+        notes = findNotes(getNotebooks.index("Sandbox"))
+        notes.each do |key, value|
+            # GUIDを元にnoteを取得
+            note = @noteStore.getNote(@authToken, key, true, true, true, true)
+            # notebookGuidを同期先のGUIDに変更
+            note.notebookGuid = "a81435b5-66cc-49a0-b45c-cf5c27cdceed"
+            @noteStoreTo.createNote(@authTokenTo, note)
+        end
+    end
+    
     # アップロードを行う。
     def upload(title, path, defaultNotebook=nil)
         # ファイル読み込み

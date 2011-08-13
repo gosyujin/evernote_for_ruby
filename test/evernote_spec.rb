@@ -15,7 +15,7 @@ describe MyEvernote do
             @e = MyEvernote.new
         end
         it "complete." do
-            puts @e.inputText("#{Dir.pwd}\\test\\test.txt")
+            puts @e.inputText("#{Dir.pwd}/test.txt")
         end
     end
     
@@ -38,37 +38,59 @@ describe MyEvernote do
     end
     
     context "findNotes" do
+        word = "outlook"
+        notebook = "Sandbox"
+        guid = "33880e53-4c9f-4104-a6e6-777ed1e3cef2"
+        nothWord = "hage"
+        
         before do
             @e = MyEvernote.new
         end
-        it "complete." do
+        it "complete. all" do
             pp @e.findNotes()
         end
-        it "complete. search word" do
-            pp @e.findNotes("outlook")
+        it "complete. search word: #{word}" do
+            pp @e.findNotes(word)
         end
-        it "complete. search GUID" do
-            pp @e.findNotes("33880e53-4c9f-4104-a6e6-777ed1e3cef2")
+        it "complete. search GUID: #{guid}" do
+            pp @e.findNotes(guid)
+        end
+        it "complete. search notebook: #{notebook}" do
+            pp @e.findNotes(@e.getNotebooks.index(notebook))
+        end
+        it "complete. nothing: #{nothWord}" do
+            pp @e.findNotes(nothWord)
         end
 #        it "EDAMNotFoundException" do
 #            @e.findNotes("33880e53-4c9f-4104-a6e6-777ed1e99999")
 #        end
-        it "complete. nothing" do
-            pp @e.findNotes("hage")
+    end
+    
+    context "sync" do
+        before do
+            @e = MyEvernote.new
+        end
+        it "complete. " do
+            @e.sync()
         end
     end
     
     context "isGuid" do
+        guid = "33880e53-4c9f-4104-a6e6-777ed1e3cef2"
+        no_guid = ["8e53-4c9f-4104-a6e6-777ed1e3cef2",
+            "97fASASf-aadd-f4ea-aq1e-25d122087168",
+            "outlook"
+        ]
         before do
             @e = MyEvernote.new
         end
-        it "complete. true" do
-            @e.isGuid("33880e53-4c9f-4104-a6e6-777ed1e3cef2").should be_true
+        it "complete. true: #{guid}" do
+            @e.isGuid(guid).should be_true
         end
-        it "complete. false" do
-            @e.isGuid("97f679bf-a2cadd-f4e5sa-aqe1e-25d122087168").should be_false
-            @e.isGuid("97fASASf-aadd-f4ea-aq1e-25d122087168").should be_false
-            @e.isGuid("outlook").should be_false
+        it "complete. false: #{no_guid.join(",")}" do
+            no_guid.each do |guid|
+                @e.isGuid(guid).should be_false
+            end
         end
     end
 end
