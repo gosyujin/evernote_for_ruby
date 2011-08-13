@@ -131,6 +131,8 @@ class MyEvernote
         notes.each do |key, value|
             # GUIDを元にnoteを取得
             note = @noteStore.getNote(@authToken, key, true, true, true, true)
+            # タイトルの頭に"sandbox "を追加
+            note.title = "sandbox " + note.title
             # notebookGuidを同期先のGUIDに変更
             note.notebookGuid = "a81435b5-66cc-49a0-b45c-cf5c27cdceed"
             @noteStoreTo.createNote(@authTokenTo, note)
