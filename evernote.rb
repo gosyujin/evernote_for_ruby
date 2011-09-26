@@ -136,6 +136,11 @@ class MyEvernote
             # notebookGuidを同期先のGUIDに変更
             note.notebookGuid = "a81435b5-66cc-49a0-b45c-cf5c27cdceed"
             @noteStoreTo.createNote(@authTokenTo, note)
+            # 再取得 
+            note = @noteStore.getNote(@authToken, key, true, true, true, true)
+            # notebookGuidをWaitのGUIDに変更
+            note.notebookGuid = "2d8ec8b5-5706-434d-a1dc-4ea0c6ba1993"
+            @noteStore.updateNote(@authToken, note)
         end
     end
     
