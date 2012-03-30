@@ -34,7 +34,7 @@ end
       @e.getNotebook(@NotebookGuid).name.should be == @NotebookName
     end
     it 'ノートブック内のノートを取得できる' do
-      pp @e.getNote(@NotebookGuid)
+      @e.getNote(@NotebookGuid)
     end
   end
   describe 'GUIDの妥当性を確認するとき' do
