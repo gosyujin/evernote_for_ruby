@@ -1,4 +1,3 @@
-.autotest
 .bundle/
 Gemfile.lock
 vendor
