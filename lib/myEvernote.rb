@@ -105,7 +105,36 @@ class MyEvernote
     filter.notebookGuid = notebookGuid
     @noteStore.findNotes(@token, filter, 0, count)
   end
-  
+
+  # ノートのアップを行う
+  def upload()
+    # ノートブックの選択
+    notebook = @noteStore.getDefaultNotebook(@token)
+
+    note = Evernote::EDAM::Type::Note.new()
+    note.title = "testtit" + (Time.now.to_i * 1000).to_s
+    note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
+      '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
+      '<en-note>testcon</en-note>'
+    note.created = Time.now.to_i * 1000
+    note.updated = note.created
+
+    result = @noteStore.createNote(@token, note)
+    puts "Notebook:#{notebook}\nTitle   :#{note.title}\nCreated :#{note.created}"
+    return result
+  end
+
+  # ノートの削除(ゴミ箱)を行う
+  def delete(guid)
+    # 存在確認してから
+    @noteStore.deleteNote(@token, guid)
+  end
+
+  # ノートの完全削除を行う
+  def purge()
+    @noteStore.expungeInactiveNotes(@token)
+  end
+
   # GUIDかどうかの判定を行う
   def isGuid(guid)
     if guid =~ /#{Evernote::EDAM::Limits::EDAM_GUID_REGEX}/ then
