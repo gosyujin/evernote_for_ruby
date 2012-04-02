@@ -4,8 +4,8 @@ require 'kconv'
 require 'pp'
 
 dir = File.expand_path(File.dirname(__FILE__))
-$LOAD_PATH.push("#{dir}/lib/ruby")
-$LOAD_PATH.push("#{dir}/lib/ruby/Evernote/EDAM")
+$LOAD_PATH.push("#{dir}/ruby")
+$LOAD_PATH.push("#{dir}/ruby/Evernote/EDAM")
 
 require 'thrift/types'
 require 'thrift/struct'
@@ -28,7 +28,7 @@ class MyEvernote
       "consumerKey" => "your evernote consumerKey.", 
       "consumerSecret" => "your evernote consumerSecret.", 
     })
-    
+
     host = "sandbox.evernote.com"
     userStoreUrl = "https://#{host}/edam/user"
     userStoreTransport = Thrift::HTTPClientTransport.new(userStoreUrl)
@@ -113,5 +113,20 @@ class MyEvernote
     else
       return false
     end
+  end
+end
+
+if __FILE__ == $0 then 
+  if ARGV.length == 0 then
+    puts "Usage: #{$0} NOTE_TITLE CONTENT_TEXT"
+    puts "       #{$0} sync"
+    exit
+  end
+
+  e = MyEvernote.new()
+  if ARGV[0] == "sync" then
+    e.sync
+  else
+    e.upload(ARGV[0], ARGV[1])
   end
 end

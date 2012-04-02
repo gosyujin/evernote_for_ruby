@@ -1,17 +1,10 @@
+# -*- encoding: utf-8 -*-
 require 'rubygems'
 require 'rspec'
-require 'myEvernote'
-require 'kconv'
+require './lib/myEvernote'
 require 'pp'
 
 describe MyEvernote do
-# プラットフォームがWindowsの場合標準出力をKconv.tosjisでラップ
-if RUBY_PLATFORM.downcase =~ /mswin(?!ce)|mingw|cygwin|bccwin/ then
-  def $stdout.write(str)
-    super Kconv.tosjis(str)
-  end
-end
-
   before do
     @e = MyEvernote.new()
     @UpDelNotebookGuid = '71cdd6f9-5070-4508-bc80-a3f835a61a55'
@@ -21,6 +14,7 @@ end
   end
   describe 'ノートブックを取得するとき' do
     it '正常にログインできる' do
+puts @e.authentication
       @e.authentication.user.username.should be == "kk_ataka_t"
     end
     it '正常にGUIDとノートブック名が対応づけられている' do
