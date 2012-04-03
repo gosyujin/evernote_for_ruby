@@ -2,6 +2,7 @@ require 'rubygems'
 require 'pit'
 require 'kconv'
 require 'pp'
+require 'digest/md5'
 
 dir = File.expand_path(File.dirname(__FILE__))
 $LOAD_PATH.push("#{dir}/ruby")
@@ -111,18 +112,38 @@ class MyEvernote
   def upload(title, content, notebook=nil)
     # ノートブックの選択
     notebook = @noteStore.getDefaultNotebook(@token)
+    begin
+      # リソースの登録
+      filename = "./lib/enlogo.png"
+      image = File.open(filename, "rb") { |io| io.read }
+      hashFunc = Digest::MD5.new
+      hashHex = hashFunc.hexdigest(image)
+      data = Evernote::EDAM::Type::Data.new()
+      data.size = image.size
+      data.bodyHash = hashHex
+      data.body = image
+      resource = Evernote::EDAM::Type::Resource.new()
+      resource.mime = "image/png"
+      resource.data = data
+      resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new()
+      resource.attributes.fileName = filename
 
-    note = Evernote::EDAM::Type::Note.new()
-    note.title = title
-    note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
-      '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
-      '<en-note>' +
-      content +
-      '</en-note>'
-    note.created = Time.now.to_i * 1000
-    note.updated = note.created
+      note = Evernote::EDAM::Type::Note.new()
+      note.title = title
+      note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
+        '<en-note>' +
+        content +
+        '<en-media type="image/png" hash="' + hashHex + '"/>' +
+        '</en-note>'
+      note.created = Time.now.to_i * 1000
+      note.updated = note.created
+      note.resources = [ resource ]
 
-    result = @noteStore.createNote(@token, note)
+      result = @noteStore.createNote(@token, note)
+    rescue => ex
+      evernote_info(ex)
+    end
 #    puts "Notebook:#{notebook}\nTitle   :#{note.title}\nCreated :#{note.created}"
     return result
   end
