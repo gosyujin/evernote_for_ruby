@@ -73,14 +73,10 @@ class MyEvernote
 #      puts "Auth Success: #{auth.user.username}"
       return auth
     rescue Evernote::EDAM::Error::EDAMUserException => ex
-      parameter = ex.parameter
-      errorCode = ex.errorCode
-      errorText = Evernote::EDAM::Error::EDAMErrorCode::VALUE_MAP[errorCode]
-      puts "Auth Error: #{errorText}(ErrorCode: #{errorCode}), Parameter: #{parameter}"
-      exit
+      evernote_info(ex)
     end
   end
-  
+
   # 全ノートブックを取得する
   def getNotebooks()
     @noteStore.listNotebooks(@token)
@@ -100,27 +96,34 @@ class MyEvernote
   end
   
   # ノートの検索を行う
-  def getNote(notebookGuid, count=100)
+  def getNote(words, notebookGuid, count=100)
     filter = Evernote::EDAM::NoteStore::NoteFilter.new
+    filter.words = words
     filter.notebookGuid = notebookGuid
-    @noteStore.findNotes(@token, filter, 0, count)
+    begin
+      @noteStore.findNotes(@token, filter, 0, count)
+    rescue Evernote::EDAM::Error::EDAMUserException => ex
+      evernote_info(ex)
+    end
   end
 
   # ノートのアップを行う
-  def upload()
+  def upload(title, content, notebook=nil)
     # ノートブックの選択
     notebook = @noteStore.getDefaultNotebook(@token)
 
     note = Evernote::EDAM::Type::Note.new()
-    note.title = "testtit" + (Time.now.to_i * 1000).to_s
+    note.title = title
     note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
       '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
-      '<en-note>testcon</en-note>'
+      '<en-note>' +
+      content +
+      '</en-note>'
     note.created = Time.now.to_i * 1000
     note.updated = note.created
 
     result = @noteStore.createNote(@token, note)
-    puts "Notebook:#{notebook}\nTitle   :#{note.title}\nCreated :#{note.created}"
+#    puts "Notebook:#{notebook}\nTitle   :#{note.title}\nCreated :#{note.created}"
     return result
   end
 
@@ -142,6 +145,15 @@ class MyEvernote
     else
       return false
     end
+  end
+
+  # Error出力
+  def evernote_info(ex)
+    parameter = ex.parameter
+    errorCode = ex.errorCode
+    errorText = Evernote::EDAM::Error::EDAMErrorCode::VALUE_MAP[errorCode]
+    puts "Error: #{errorText}(ErrorCode: #{errorCode}), Parameter: #{parameter}"
+    exit
   end
 end
 

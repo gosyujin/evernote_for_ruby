@@ -11,6 +11,10 @@ describe MyEvernote do
     @UpDelNotebookName = "UpDeleteNotebook"
     @NotebookGuid = "450b52e6-2daa-4b04-9012-4623a8e12ef5"
     @NotebookName = "TestNotebook"
+    @SandboxGuid = "33880e53-4c9f-4104-a6e6-777ed1e3cef2"
+    @SandboxName = "Sandbox"
+
+    @now = (Time.now.to_i * 1000).to_s
   end
   describe "ノートブックを取得するとき" do
     it "正常にログインできる" do
@@ -27,17 +31,24 @@ describe MyEvernote do
       @e.getNotebook(@NotebookGuid).name.should be == @NotebookName
     end
     it "ノートブック内のノートを取得できる" do
-      @e.getNote(@NotebookGuid)
+      @e.getNote("", @NotebookGuid, 1).notes[0].title.should be == "Images"
+      @e.getNote("violated", nil, 1).notes[0].title.should be == "rspec_sample_note"
+      @e.getNote("violated", @NotebookGuid, 1).notes[0].title.should be == "rspec_sample_note"
     end
   end
   describe "ノートを操作するとき" do
     it "デフォルトノートブックにノートをアップできる" do
-      result = @e.upload()
-      # 比較
+      @e.upload("title"+@now, "content"+@now)
+
+      note = @e.getNote("content"+@now, @SandboxGuid, 1)
+      note.notes[0].title.should be == "title"+@now
     end
     it "ノートを論理削除できる" do
-      note = @e.getNote("33880e53-4c9f-4104-a6e6-777ed1e3cef2", 1)
+      note = @e.getNote("content"+@now, @SandboxGuid, 1)
       @e.delete(note.notes[0].guid)
+
+      note_after = @e.getNote("content"+@now, @SandboxGuid, 1)
+      note.notes.length.should_not be == note_after.notes.length
     end
   end
   describe "GUIDの妥当性を確認するとき" do
