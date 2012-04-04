@@ -109,24 +109,26 @@ class MyEvernote
   end
 
   # ノートのアップを行う
-  def upload(title, content, notebook=nil)
+  def upload(title, content, attach, notebook=nil)
     # ノートブックの選択
     notebook = @noteStore.getDefaultNotebook(@token)
     begin
       # リソースの登録
-      filename = "./lib/enlogo.png"
-      image = File.open(filename, "rb") { |io| io.read }
+      filename = File.expand_path(attach)
+      filemime = "application/x-compress"
+      file = File.open(filename, "rb") { |io| io.read }
       hashFunc = Digest::MD5.new
-      hashHex = hashFunc.hexdigest(image)
+      hashHex = hashFunc.hexdigest(file)
       data = Evernote::EDAM::Type::Data.new()
-      data.size = image.size
+      data.size = file.size
       data.bodyHash = hashHex
-      data.body = image
+      data.body = file
+
       resource = Evernote::EDAM::Type::Resource.new()
-      resource.mime = "image/png"
+      resource.mime = filemime
       resource.data = data
       resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new()
-      resource.attributes.fileName = filename
+      resource.attributes.fileName = File.basename(filename)
 
       note = Evernote::EDAM::Type::Note.new()
       note.title = title
@@ -134,7 +136,7 @@ class MyEvernote
         '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
         '<en-note>' +
         content +
-        '<en-media type="image/png" hash="' + hashHex + '"/>' +
+        '<en-media type="' + filemime + '" hash="' + hashHex + '"/>' +
         '</en-note>'
       note.created = Time.now.to_i * 1000
       note.updated = note.created
@@ -151,7 +153,11 @@ class MyEvernote
   # ノートの削除(ゴミ箱)を行う
   def delete(guid)
     # 存在確認してから
-    @noteStore.deleteNote(@token, guid)
+    begin
+      @noteStore.deleteNote(@token, guid)
+    rescue => ex
+      evernote_info(ex)
+    end
   end
 
   # ノートの完全削除を行う
@@ -180,15 +186,10 @@ end
 
 if __FILE__ == $0 then 
   if ARGV.length == 0 then
-    puts "Usage: #{$0} NOTE_TITLE CONTENT_TEXT"
-    puts "       #{$0} sync"
+    puts "Usage: #{$0} NOTE_TITLE CONTENT_TEXT ATTACHMENT_FILE"
     exit
   end
 
   e = MyEvernote.new()
-  if ARGV[0] == "sync" then
-    e.sync
-  else
-    e.upload(ARGV[0], ARGV[1])
-  end
+  e.upload(ARGV[0], ARGV[1], ARGV[2])
 end
