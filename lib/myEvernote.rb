@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'mime/types'
 require 'pit'
 require 'kconv'
 require 'pp'
@@ -109,39 +110,46 @@ class MyEvernote
   end
 
   # ノートのアップを行う
-  def upload(title, content, attach, notebook=nil)
+  def upload(title, content, attach)
     # ノートブックの選択
-    notebook = @noteStore.getDefaultNotebook(@token)
+    #notebook = @noteStore.getDefaultNotebook(@token)
     begin
-      # リソースの登録
-      filename = File.expand_path(attach)
-      filemime = "application/x-compress"
-      file = File.open(filename, "rb") { |io| io.read }
-      hashFunc = Digest::MD5.new
-      hashHex = hashFunc.hexdigest(file)
-      data = Evernote::EDAM::Type::Data.new()
-      data.size = file.size
-      data.bodyHash = hashHex
-      data.body = file
+      unless attach.nil? then
+        filename = File.expand_path(attach)
+        filemime = MIME::Types.type_for(attach)[0].to_s
+        file = File.open(filename, "rb") { |io| io.read }
+        hashFunc = Digest::MD5.new
+        hashHex = hashFunc.hexdigest(file)
+        data = Evernote::EDAM::Type::Data.new()
+        data.size = file.size
+        data.bodyHash = hashHex
+        data.body = file
 
-      resource = Evernote::EDAM::Type::Resource.new()
-      resource.mime = filemime
-      resource.data = data
-      resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new()
-      resource.attributes.fileName = File.basename(filename)
+        resource = Evernote::EDAM::Type::Resource.new()
+        resource.mime = filemime
+        resource.data = data
+        resource.attributes = Evernote::EDAM::Type::ResourceAttributes.new()
+        resource.attributes.fileName = File.basename(filename)
+      end
 
       note = Evernote::EDAM::Type::Note.new()
       note.title = title
-      note.content = '<?xml version="1.0" encoding="UTF-8"?>' +
+      note.content = 
+        '<?xml version="1.0" encoding="UTF-8"?>' +
         '<!DOCTYPE en-note SYSTEM "http://xml.evernote.com/pub/enml.dtd">' +
         '<en-note>' +
-        content +
-        '<en-media type="' + filemime + '" hash="' + hashHex + '"/>' +
+          content +
+      unless attach.nil? then
+        '<en-media type="' + filemime + '" hash="' + hashHex + '"/>' + 
         '</en-note>'
+      else
+        '</en-note>'
+      end
       note.created = Time.now.to_i * 1000
       note.updated = note.created
-      note.resources = [ resource ]
-
+      unless attach.nil? then
+        note.resources = [ resource ]
+      end
       result = @noteStore.createNote(@token, note)
     rescue => ex
       evernote_info(ex)

@@ -13,8 +13,6 @@ describe MyEvernote do
     @NotebookName = "TestNotebook"
     @SandboxGuid = "33880e53-4c9f-4104-a6e6-777ed1e3cef2"
     @SandboxName = "Sandbox"
-
-    @now = (Time.now.to_i * 1000).to_s
   end
   describe "ノートブックを取得するとき" do
     it "正常にログインできる" do
@@ -38,16 +36,25 @@ describe MyEvernote do
   end
   describe "ノートを操作するとき" do
     it "デフォルトノートブックにノートをアップできる" do
-      @e.upload("title"+@now, "content"+@now, "./lib/doc.zip")
+      now = (Time.now.to_i * 1000).to_s
+      @e.upload("title"+now, "content"+now, nil)
 
-      #note = @e.getNote("content"+@now, @SandboxGuid, 1)
-      #note.notes[0].title.should be == "title"+@now
+      note = @e.getNote("content"+now, @SandboxGuid, 1)
+      note.notes[0].title.should be == "title"+now
+    end
+    it "デフォルトノートブックに添付ファイル付きノートをアップできる" do
+      now = (Time.now.to_i * 1000).to_s
+      @e.upload("title"+now, "content"+now, "./lib/doc.zip")
+
+      note = @e.getNote("content"+now, @SandboxGuid, 1)
+      note.notes[0].title.should be == "title"+now
     end
     it "ノートを論理削除できる" do
       pending("コンフリクトする。Error: DATA_CONFLICT(ErrorCode: 10), Parameter: Note.guid")
-      note = @e.getNote("content"+@now, @SandboxGuid, 1)
+      now = (Time.now.to_i * 1000).to_s
+      note = @e.getNote("content"+now, @SandboxGuid, 1)
       @e.delete(note.notes[0].guid)
-      note_after = @e.getNote("content"+@now, @SandboxGuid, 1)
+      note_after = @e.getNote("content"+now, @SandboxGuid, 1)
       note.notes.length.should_not be == note_after.notes.length
     end
   end
