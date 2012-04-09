@@ -114,6 +114,10 @@ class MyEvernote
     # ノートブックの選択
     #notebook = @noteStore.getDefaultNotebook(@token)
     begin
+      if !attach.nil? and !File.exist?(attach) then
+        puts "not found #{attach}. upload title and contents"
+        attach = nil
+      end
       unless attach.nil? then
         filename = File.expand_path(attach)
         filemime = MIME::Types.type_for(attach)[0].to_s

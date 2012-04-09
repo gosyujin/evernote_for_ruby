@@ -38,16 +38,24 @@ describe MyEvernote do
     it "デフォルトノートブックにノートをアップできる" do
       now = (Time.now.to_i * 1000).to_s
       @e.upload("title"+now, "content"+now, nil)
-
       note = @e.getNote("content"+now, @SandboxGuid, 1)
       note.notes[0].title.should be == "title"+now
     end
     it "デフォルトノートブックに添付ファイル付きノートをアップできる" do
       now = (Time.now.to_i * 1000).to_s
-      @e.upload("title"+now, "content"+now, "./lib/doc.zip")
-
+      @e.upload("title"+now, "content"+now, "./lib/enlogo.png")
       note = @e.getNote("content"+now, @SandboxGuid, 1)
       note.notes[0].title.should be == "title"+now
+
+      now = (Time.now.to_i * 1000).to_s
+      @e.upload("title"+now, "content"+now, "./lib/enlogo.zip")
+      note = @e.getNote("content"+now, @SandboxGuid, 1)
+      note.notes[0].title.should be == "title"+now
+    end
+    it "デフォルトノートブックに存在しない添付ファイルを指定するとエラーになる" do
+      now = (Time.now.to_i * 1000).to_s
+      @e.upload("title"+now, "content"+now, "./lib/shouldnotfound.zip")
+      pending("合格条件は検索しても見つからない事？")
     end
     it "ノートを論理削除できる" do
       pending("コンフリクトする。Error: DATA_CONFLICT(ErrorCode: 10), Parameter: Note.guid")
