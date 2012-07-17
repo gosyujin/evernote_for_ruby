@@ -236,7 +236,7 @@ class MyEvernote
     
     # 使用量を取得
     def get_upload()
-        sync_state = @noteStoreTo.getSyncState(@authToken)
+        sync_state = @noteStoreTo.getSyncState(@authTokenTo)
         puts sync_state.uploaded
     end
 end
