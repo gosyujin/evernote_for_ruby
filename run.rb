@@ -9,6 +9,7 @@ end
 e = MyEvernote.new()
 if ARGV[0] == "sync" then
 	e.sync
+	e.getload
 else
 	e.upload(ARGV[0], ARGV[1])
 end
