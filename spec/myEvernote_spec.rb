@@ -29,7 +29,7 @@ describe MyEvernote do
       @e.getNotebook(@NotebookGuid).name.should be == @NotebookName
     end
     it "ノートブック内のノートを取得できる" do
-      @e.getNote("", @NotebookGuid, 1).notes[0].title.should be == "Images"
+      @e.getNote("", @NotebookGuid, 1).notes[0].title.should be == "TestNote"
       @e.getNote("violated", nil, 1).notes[0].title.should be == "rspec_sample_note"
       @e.getNote("violated", @NotebookGuid, 1).notes[0].title.should be == "rspec_sample_note"
     end
@@ -75,6 +75,11 @@ describe MyEvernote do
     end
     it "妥当なGUIDではない(桁が違う)" do
       @e.isGuid("33880e53-4c9f-4104-a6e6-777ed1e3cef211111").should be false
+    end
+  end
+  context "Evernoteの使用量を確認するとき" do
+    it "0 byte以上の使用量を取得できる" do
+      @e.get_upload().should_not be == 0
     end
   end
 end

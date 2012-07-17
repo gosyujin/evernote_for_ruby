@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'rubygems'
 require 'mime/types'
 require 'pit'
@@ -184,6 +185,12 @@ class MyEvernote
     else
       return false
     end
+  end
+
+  # 使用量を取得
+  def get_upload()
+    sync_state = @noteStore.getSyncState(@token)
+    return sync_state.uploaded
   end
 
   # Error出力
