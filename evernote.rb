@@ -17,6 +17,7 @@ require 'Evernote/EDAM/limits_constants.rb'
 
 require 'rubygems'
 require 'pit'
+require 'syslog'
 
 class MyEvernote
     # 初期化処理。ユーザ名、パスワードを入力し認証を行う。
@@ -237,6 +238,9 @@ class MyEvernote
     # 使用量を取得
     def get_upload()
         sync_state = @noteStoreTo.getSyncState(@authTokenTo)
+        Syslog.open("Evernote")
+        Syslog.info("#{sync_state.uploaded}")
+        Syslog.close
         puts sync_state.uploaded
     end
 end
