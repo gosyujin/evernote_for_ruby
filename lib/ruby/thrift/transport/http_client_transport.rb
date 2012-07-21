@@ -26,10 +26,12 @@ require 'stringio'
 module Thrift
   class HTTPClientTransport < BaseTransport
 
-    def initialize(url)
+    def initialize(url, proxy_addr = nil, proxy_port = nil)
       @url = URI url
       @headers = {'Content-Type' => 'application/x-thrift'}
       @outbuf = ""
+      @proxy_addr = proxy_addr
+      @proxy_port = proxy_port
     end
 
     def open?; true end
@@ -41,21 +43,11 @@ module Thrift
     end
 
     def flush
-      http = Net::HTTP.new @url.host, @url.port
+      http = Net::HTTP.new @url.host, @url.port, @proxy_addr, @proxy_port
       http.use_ssl = @url.scheme == "https"
-      resp, data = http.post(@url.request_uri, @outbuf, @headers)
-      @inbuf = StringIO.new data
+      resp = http.post(@url.request_uri, @outbuf, @headers)
+      @inbuf = StringIO.new resp.body
       @outbuf = ""
-
-#      proxy_class = Net::HTTP::Proxy(ENV["PROXY"], 8080)
-#      http = proxy_class.new(@url.host)
-
-#      http.start do |http|
-#        # http.use_ssl = @url.scheme == "https"
-#        resp, data = http.post(@url.request_uri, @outbuf, @headers)
-#        @inbuf = StringIO.new data
-#        @outbuf = ""
-#      end 
     end
   end
 end
