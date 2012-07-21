@@ -238,8 +238,9 @@ class MyEvernote
     # 使用量を取得
     def get_upload()
         sync_state = @noteStoreTo.getSyncState(@authTokenTo)
+        puts "syslog"
         Syslog.open("Evernote")
-        Syslog.info("#{sync_state.uploaded}")
+        Syslog.log(Syslog::LOG_INFO, "#{sync_state.uploaded}")
         Syslog.close
         puts sync_state.uploaded
     end
