@@ -15,7 +15,7 @@ describe MyEvernote do
             @e = MyEvernote.new
         end
         it "complete." do
-            puts @e.inputText("#{Dir.pwd}/test.txt")
+            puts @e.inputText("#{Dir.pwd}/test/test.txt")
         end
     end
     

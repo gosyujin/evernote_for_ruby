@@ -1,8 +1,8 @@
 #!/bin/ruby
 # = Evernoteを操作するクラス
 dir = File.expand_path(File.dirname(__FILE__))
-$LOAD_PATH.push("#{dir}/lib/ruby")
-$LOAD_PATH.push("#{dir}/lib/ruby/Evernote/EDAM")
+$LOAD_PATH.push("#{dir}/lib/")
+$LOAD_PATH.push("#{dir}/lib/Evernote/EDAM")
 
 require 'thrift/types'
 require 'thrift/struct'
@@ -25,12 +25,14 @@ class MyEvernote
         # https://sandbox.evernote.com/Registration.action
         # まずはsandboxで新規ユーザ登録！
         user = Pit.get("evernote", :require => {
+            "developerToken" => "your evernote token.", 
             "userName" => "your evernote userName.", 
             "password" => "your evernote password.", 
             "consumerKey" => "your evernote consumerKey.", 
             "consumerSecret" => "your evernote consumerSecret.", 
         })
         userTo = Pit.get("evernoteTo", :require => {
+            "developerToken" => "your evernote token.", 
             "userName" => "your evernote userName.", 
             "password" => "your evernote password.", 
             "consumerKey" => "your evernote consumerKey.", 
@@ -56,11 +58,12 @@ class MyEvernote
         userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
         userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
         # 認証
-        @auth = auth(user, userStore)
-        @authToken = @auth.authenticationToken
-        
+        #@auth = auth(user, userStore)
+        #@authToken = @auth.authenticationToken
+        @authToken = user["developerToken"]
+
         noteStoreUrlBase = "https://#{evernoteHost}/edam/note/"
-        noteStoreUrl = noteStoreUrlBase + @auth.user.shardId
+        noteStoreUrl = userStore.getNoteStoreUrl(@authToken)
         noteStoreTransport = Thrift::HTTPClientTransport.new(noteStoreUrl)
         noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
         @noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
@@ -71,11 +74,12 @@ class MyEvernote
         userStoreProtocolTo = Thrift::BinaryProtocol.new(userStoreTransportTo)
         userStoreTo = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocolTo)
         # 同期先アカウント
-        @authTo = auth(userTo, userStoreTo)
-        @authTokenTo = @authTo.authenticationToken
+        #@authTo = auth(userTo, userStoreTo)
+        #@authTokenTo = @authTo.authenticationToken
+        @authTokenTo = userTo["developerToken"]
 
         noteStoreUrlBaseTo = "https://#{evernoteHostTo}/edam/note/"
-        noteStoreUrlTo = noteStoreUrlBaseTo + @authTo.user.shardId
+        noteStoreUrlTo = userStoreTo.getNoteStoreUrl(@authTokenTo)
         noteStoreTransportTo = Thrift::HTTPClientTransport.new(noteStoreUrlTo)
         noteStoreProtocolTo = Thrift::BinaryProtocol.new(noteStoreTransportTo)
         @noteStoreTo = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocolTo)
@@ -134,6 +138,7 @@ class MyEvernote
             note = @noteStore.getNote(@authToken, key, true, true, true, true)
             # タイトルの頭に"sandbox "を追加
             note.title = "sandbox " + note.title
+            puts note.title
             # notebookGuidを同期先のGUIDに変更
             note.notebookGuid = "a81435b5-66cc-49a0-b45c-cf5c27cdceed"
             @noteStoreTo.createNote(@authTokenTo, note)

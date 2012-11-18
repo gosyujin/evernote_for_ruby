@@ -12,7 +12,7 @@ describe MyEvernote do
     context "upload" do
         it "complete." do
             e = MyEvernote.new
-            e.upload("Testだ#{Time.now.to_i * 1000}", "#{Dir.pwd}\\test\\test.txt")
+            e.upload("Testだ#{Time.now.to_i * 1000}", "#{Dir.pwd}/test/test.txt")
         end
 #        it "空のときはアップロードエラーになる" do
 #            e = MyEvernote.new
