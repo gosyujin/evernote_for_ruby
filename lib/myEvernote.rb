@@ -26,6 +26,7 @@ class MyEvernote
   # 認証が通ったらNoteStoreを作成する。
   def initialize()
     @core = Pit.get("evernote", :require => {
+      "developerToken" => "your evernote token.",
       "userName" => "your evernote userName.", 
       "password" => "your evernote password.", 
       "consumerKey" => "your evernote consumerKey.", 
@@ -38,11 +39,13 @@ class MyEvernote
     userStoreProtocol = Thrift::BinaryProtocol.new(userStoreTransport)
     userStore = Evernote::EDAM::UserStore::UserStore::Client.new(userStoreProtocol)
     # 認証
-    @authentication = auth(userStore)
-    @token = @authentication.authenticationToken
+    #@authentication = auth(userStore)
+    #@token = @authentication.authenticationToken
+    @authToken = @core["developerToken"]
+
 
     noteStoreUrlBase = "https://#{host}/edam/note/"
-    noteStoreUrl = noteStoreUrlBase + @authentication.user.shardId
+    noteStoreUrl = userStore.getNoteStoreUrl(@authToken)
     noteStoreTransport = Thrift::HTTPClientTransport.new(noteStoreUrl)
     noteStoreProtocol = Thrift::BinaryProtocol.new(noteStoreTransport)
     @noteStore = Evernote::EDAM::NoteStore::NoteStore::Client.new(noteStoreProtocol)
@@ -82,19 +85,19 @@ class MyEvernote
 
   # 全ノートブックを取得する
   def getNotebooks()
-    @noteStore.listNotebooks(@token)
+    @noteStore.listNotebooks(@authToken)
   end
   
   # ノートブックの検索を行う
   def getNotebook(key)
     if isGuid(key) then
       # GUIDから検索
-      return @noteStore.getNotebook(@token, key)
+      return @noteStore.getNotebook(@authToken, key)
     else
       # ワードから検索？
       #filter = Evernote::EDAM::NoteStore::NoteFilter.new
       #filter.notebookGuid = '2d8ec8b5-5706-434d-a1dc-4ea0c6ba1993'
-      #@noteStore.findNotes(@token, filter, 0, 5)
+      #@noteStore.findNotes(@authToken, filter, 0, 5)
     end
   end
   
@@ -104,7 +107,7 @@ class MyEvernote
     filter.words = words
     filter.notebookGuid = notebookGuid
     begin
-      @noteStore.findNotes(@token, filter, 0, count)
+      @noteStore.findNotes(@authToken, filter, 0, count)
     rescue Evernote::EDAM::Error::EDAMUserException => ex
       evernote_info(ex)
     end
@@ -113,7 +116,7 @@ class MyEvernote
   # ノートのアップを行う
   def upload(title, content, attach)
     # ノートブックの選択
-    #notebook = @noteStore.getDefaultNotebook(@token)
+    #notebook = @noteStore.getDefaultNotebook(@authToken)
     begin
       if !attach.nil? and !File.exist?(attach) then
         puts "not found #{attach}. upload title and contents"
@@ -155,7 +158,7 @@ class MyEvernote
       unless attach.nil? then
         note.resources = [ resource ]
       end
-      result = @noteStore.createNote(@token, note)
+      result = @noteStore.createNote(@authToken, note)
     rescue => ex
       evernote_info(ex)
     end
@@ -167,7 +170,7 @@ class MyEvernote
   def delete(guid)
     # 存在確認してから
     begin
-      @noteStore.deleteNote(@token, guid)
+      @noteStore.deleteNote(@authToken, guid)
     rescue => ex
       evernote_info(ex)
     end
@@ -175,7 +178,7 @@ class MyEvernote
 
   # ノートの完全削除を行う
   def purge()
-    @noteStore.expungeInactiveNotes(@token)
+    @noteStore.expungeInactiveNotes(@authToken)
   end
 
   # GUIDかどうかの判定を行う
@@ -189,7 +192,7 @@ class MyEvernote
 
   # 使用量を取得
   def get_upload()
-    sync_state = @noteStore.getSyncState(@token)
+    sync_state = @noteStore.getSyncState(@authToken)
     return sync_state.uploaded
   end
 
